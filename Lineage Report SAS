@@ -1,0 +1,87 @@
+*//////////////////////////////////////////////////////////////////////////////////////////
+Below code is used to import, clean, and manage the dataset
+///////////////////////////////////////////////////////////////////////////////////////////;
+
+*Assigning a folder for the dataset to live;
+*After running this code, go to File --> Import data...;
+libname intern "Y:\Liz\Internship\5.28.21";
+run;
+
+*Creating temporary dataset;
+*Can use SAS date converter (https://www.sastipsbyhal.com/2012/01/sas-date-calculator-now-available.html) to update date ranges;
+data may28;
+set intern.may28;
+if iso_county = "Casron" then iso_county = "Carson";
+if iso_county = "carson" then iso_county = "Carson";
+if iso_county = "Carson City" then iso_county = "Carson";
+if iso_county = "churchill" then iso_county = "Churchill";
+if iso_county = "clark" then iso_county = "Clark";
+if iso_county = "lyon" then iso_county = "Lyon";
+if iso_county = "washoe" then iso_county = "Washoe";
+
+if pangolin_lineage = "None" then pangolin_lineage = "";
+if pango_lineage = "None" then pango_lineage = "";
+
+*past 30 day (4/29 - 5/28);
+if collection_date in (22399,22400,22401,22402,22403,22404,22405,22406,22407,22408,22409,22410,22411,22412,22413,
+22414,22415,22416,22417,22418,22419,22420,22421,22422,22423,22424,22425,22426,22427,22428) then month = "month";
+
+*past 14 day (5/15 - 5/28);
+if collection_date in (22415,22416,22417,22418,22419,22420,22421,22422,22423,22424,22425,22426,22427,22428) then week = "week";
+run;
+
+*Use this code to 1) double check that there are no errors with county names and 2) see which pangolin versions were used;
+proc freq data = may28;
+table iso_county pangolin_version;
+run;
+
+
+*///////////////////////////////////////////////////////////////////////////////////////////////////////
+Below code is used to obtain data for weekly lineage reports
+///////////////////////////////////////////////////////////////////////////////////////////////////////;
+
+*County level lineage frequencies;
+*Use this code to update county data.  Change the county in the WHERE statement;
+proc freq data = may28;
+where iso_county = "Washoe";
+table collection_date*pango_lineage/ nocol norow nopercent nocum cl;
+run;
+
+*Statewide past 30 day rankings - most prevalent lineages in past 30 days, based on collection date;
+proc freq data = may28;
+where (iso_county = "Carson" or iso_county = "Churchill" or iso_county = "Clark" or iso_county = "Douglas" or iso_county = "Elko" or iso_county = "Lander" or
+iso_county = "Lyon" or iso_county = "Mineral" or iso_county = "Nye" or iso_county = "Pershing" or iso_county = "Storey" or iso_county = "Washoe") and
+month = "month";
+table pango_lineage;
+run;
+
+*Statewide past 14 day rankings - most prevalent lineages in past 14 days, based on collection date;
+proc freq data = may28;
+where (iso_county = "Carson" or iso_county = "Churchill" or iso_county = "Clark" or iso_county = "Douglas" or iso_county = "Elko" or iso_county = "Lander" or
+iso_county = "Lyon" or iso_county = "Mineral" or iso_county = "Nye" or iso_county = "Pershing" or iso_county = "Storey" or iso_county = "Washoe") and
+week = "week";
+table pango_lineage;
+run;
+
+
+*//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Below are analyses that I used at one point for data requests but do not regularly use to create weekly reports
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////;
+
+*Age x county x lineage;
+proc freq data = may28;
+where iso_county = "Washoe" and month = "March";
+table age_group*pangolin_lineage/ nocol norow nopercent nocum cl;
+run;
+
+*Zip code level lineage frequencies;
+proc freq data = may28;
+where zip_code = 89059;
+table collection_date*pangolin_lineage/ nocol norow nopercent nocum cl;
+run;
+
+*looking at available zip codes;
+proc freq data = may28;
+where iso_county = "Washoe";
+table zip_code;
+run;
